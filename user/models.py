@@ -1,3 +1,4 @@
+from math import fabs
 from django.contrib.auth.models import (
     AbstractBaseUser, PermissionsMixin
 )
@@ -120,3 +121,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         Sends an email to this User.
         """
         send_mail(subject, message, from_email, [self.email], **kwargs)
+
+
+def upload_path(instance, filename):
+    return('/'.join(['profiles', str(instance.id_id), filename]))
