@@ -5,5 +5,8 @@ from ether_bingo_server.settings import BASE_DIR
 from rest_framework_swagger.views import get_swagger_view
 
 urlpatterns = [
-    path('bingo_bid/', views.bid, name='bingo_bid'),
+    path('bingo_buy_ticket/', views.buy_ticket, name='bingo_buy_ticket'),
+    path('get_bingo_room_info/', views.get_bingo_room_info,
+         name='get_bingo_room_info')
+
 ]

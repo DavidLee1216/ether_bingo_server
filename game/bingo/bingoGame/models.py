@@ -4,6 +4,11 @@ from game.bingo.bingoRoom.models import BingoRoom
 from user.models import User
 
 
+# bingo game status;  'holdon', 'selling', 'transition', 'calling', 'ended'
+class BingoGameStatus(models.Model):
+    status = models.CharField(max_length=50, null=False)
+
+
 class BingoGame(models.Model):  # one bingo game
     room = models.OneToOneField(BingoRoom, on_delete=models.CASCADE)  # room
     called_numbers = models.CharField(
@@ -12,9 +17,11 @@ class BingoGame(models.Model):  # one bingo game
         blank=True, default=0)  # last number
     start_date = models.DateTimeField(blank=False)  # start date time
     end_date = models.DateTimeField(blank=False)  # end date time
-    total_attendees = models.IntegerField(
+    total_cards_count = models.IntegerField(
         blank=False)  # total attendees count
     winner = models.OneToOneField(User, on_delete=models.CASCADE)  # winner
+    status = models.OneToOneField(BingoGameStatus, on_delete=models.DO_NOTHING)
+    live = models.BooleanField(blank=False, default=False)
 
 
 class BingoBids(models.Model):  # one bid for bingo game
@@ -24,5 +31,6 @@ class BingoBids(models.Model):  # one bid for bingo game
     coin = models.IntegerField(blank=False)
     card_info = models.CharField(
         max_length=200, blank=False, default='')  # card panel info
+    date = models.DateTimeField(blank=False)
     winning_state = models.BooleanField(
         blank=False, default=False)  # win or lose

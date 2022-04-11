@@ -2,10 +2,6 @@ from django.db import models
 from user.models import User
 
 
-class HistoryKind(models.Model):  # kind (ex. bingoroom auction, bingo game bid)
-    kind = models.CharField(max_length=10, blank=False)
-
-
 class UserProfile(models.Model):  # user profile
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # user
     country = models.CharField(max_length=200, blank=False)  # country
@@ -25,17 +21,11 @@ class UserCoinBuyHistory(models.Model):  # user's coin purchase history
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # user
     amount = models.IntegerField(
         blank=False, default=0)  # amount
-    date = models.DateTimeField(blank=False)  # puchase date
+    date = models.DateTimeField(auto_now=True, blank=False)  # puchase date
     # wallet address used for purchase
     wallet_address = models.CharField(max_length=100, blank=False)
 
 
-class UserCoinConsumeHistory(models.Model):  # user's coin consume history
-    user = models.OneToOneField(User, on_delete=models.CASCADE)  # user
-    amount = models.IntegerField(
-        blank=False, default=0)  # amount
-    kind = models.OneToOneField(
-        HistoryKind, null=True, on_delete=models.SET_NULL)  # kind
-    date = models.DateTimeField(blank=False)  # date time
-    # id of history table according to consume kind
-    consume_history_id = models.IntegerField(blank=False, default=0)
+class GameSettings(models.Model):  # game global settings
+    key = models.CharField(max_length=255, blank=False)  # key of variable
+    value = models.CharField(max_length=255, blank=True)  # value of variable

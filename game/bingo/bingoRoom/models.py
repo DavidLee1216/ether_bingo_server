@@ -6,12 +6,14 @@ from user.models import User
 class BingoRoom(models.Model):  # room information
     id = models.IntegerField(
         primary_key=True, unique=True)  # room number
-    price = models.IntegerField(blank=False)  # bingo price
+    bingo_price = models.IntegerField(blank=False)  # bingo price in coin
+    auction_start_price = models.DecimalField(
+        max_digits=8, decimal_places=5, blank=True)  # bingo room auction start price
     owner = models.OneToOneField(
         to=User, on_delete=models.CASCADE, null=True)  # room owner
     from_date = models.DateTimeField(blank=False)  # ownership start date time
     # date time expiring the ownership of the owner
-    to_due = models.DateTimeField(null=True)
+    to_date = models.DateTimeField(null=True)
     winned_bid = models.IntegerField(
         null=True)  # BingoRoomAuctionBidHistory id for checksum  # for system, it is null
 
@@ -39,8 +41,12 @@ class BingoRoomAuction(models.Model):  # room auction
         max_digits=8, decimal_places=5, blank=False)  # start price of the auction
     coin_per_bid = models.IntegerField(
         blank=False)  # coin per one bid
+    price_per_bid = models.DecimalField(
+        max_digits=8, decimal_places=5, blank=False)  # price per bid
     winner = models.OneToOneField(
         User, on_delete=models.DO_NOTHING)  # final winner of the auction
+    # whether the auction is live or not
+    live = models.BooleanField(blank=False)
 
 
 class BingoRoomAuctionBidHistory(models.Model):  # room auction bid history
@@ -52,4 +58,5 @@ class BingoRoomAuctionBidHistory(models.Model):  # room auction bid history
         blank=False)  # the order of bid of the auction
     bid_price = models.DecimalField(
         max_digits=8, decimal_places=5, blank=False)  # bid price of the bidder
+    bid_time = models.DateTimeField(blank=False)
     win_state = models.BooleanField(blank=False)  # winning state of the bidder
