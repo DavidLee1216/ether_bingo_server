@@ -6,7 +6,7 @@ from rest_framework_swagger.views import get_swagger_view
 
 urlpatterns = [
     path('bingo_buy_ticket/', views.buy_ticket, name='bingo_buy_ticket'),
-    path('get_bingo_room_info/', views.get_bingo_room_info,
-         name='get_bingo_room_info')
+    path('get_bingo_game_user_info/', views.get_bingo_game_user_info,
+         name='get_bingo_game_user_info')
 
 ]

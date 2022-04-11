@@ -10,7 +10,7 @@ from game.bingo.bingoGame.models import BingoBids
 from game.bingo.bingoRoom.models import BingoRoomAuctionBidHistory
 from .models import GameSettings, UserProfile, UserCoin, UserCoinBuyHistory
 from user.models import User
-from .serializer import UserProfileSerializer, UserCoinSerializer, UserCoinBuyHistorySerializer, UserCoinConsumeHistory
+from .serializer import UserProfileSerializer, UserCoinSerializer
 
 
 @api_view(['PUT'])
