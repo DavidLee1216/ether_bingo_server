@@ -12,8 +12,10 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 from pathlib import Path
 import os
+from django import apps
 from dotenv import load_dotenv
 from datetime import timedelta
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -46,6 +48,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -207,3 +211,30 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+
+CELERY_BROKER_URL = 'amqp://davidlee:Quoted1216@localhost'
+
+CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULE = {
+    'get_game_settings': {
+        'task': 'game.tasks.get_game_settings',
+        'schedule': crontab(minute='0', hour='0'),
+    },
+    'manage-bingo-game': {
+        'task': 'game.tasks.manage_bingo_game',
+        'schedule': 1,
+        # 'args': ("We don't need any",),
+    },
+    # Executes every Friday at 4pm
+    # 'send-notification-on-friday-afternoon': {
+    #     'task': 'game.tasks.send_notification',
+    #     'schedule': crontab(hour=16, day_of_week=5),
+    # },
+    'create_bingo_room_auction': {
+        'task': 'game.tasks.create_bingo_room_auction',
+        'schedule': crontab(minute='0', hour='18')
+    }
+}
+
+CELERY_RESULT_BACKEND = 'django-db'
+# CELERY_RESULT_BACKEND = 'django-cache'

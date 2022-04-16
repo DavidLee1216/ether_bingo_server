@@ -25,11 +25,11 @@ def buy_ticket(request):
     room_id = request.data.get("room_id")
     game_id = request.data.get("game_id")
     card_infos_string = request.data.get("card_info")
-    card_info_len = 180
-    if len(card_infos_string) % 180 != 0:
+    card_info_len = 324
+    if len(card_infos_string) % card_info_len != 0:
         return Response(data='invalid card info', status=status.HTTP_400_BAD_REQUEST)
-    card_count = len(card_infos_string) / 180
-    card_infos = [card_infos_string[i:i+180]
+    card_count = len(card_infos_string) / card_info_len
+    card_infos = [card_infos_string[i:i+card_info_len]
                   for i in range(0, card_count, card_info_len)]
     try:
         user = User.objects.get(username=username)
@@ -38,7 +38,7 @@ def buy_ticket(request):
             user_coin = UserCoin(user=user, coin=0)
             return Response(data="the user doesn't have coins", status=status.HTTP_406_NOT_ACCEPTABLE)
         try:
-            room = BingoRoom.objects.get(id=room_id, live=True)
+            room = BingoRoom.objects.get(id=room_id)
             if user_coin.coin < room.bingo_price*card_count:
                 return Response(data="the user doesn't have enough coins", status=status.HTTP_402_PAYMENT_REQUIRED)
             time = datetime.datetime.utcnow()
@@ -47,8 +47,13 @@ def buy_ticket(request):
             if game and game.room == room and game.id == game_id:
                 if check_user_coin(user=user, user_coin=user_coin):
                     for card_info in card_infos:
+                        numbers = [(int(card_info[i:i+2])
+                                    for i in range(0, len(card_info), 2))]
+                        match_state = [[True if numbers[j*6+i] == 0 else False for i in range(
+                            0, 27)] for j in range(0, 6)]
                         a_bid = BingoBids(game=game, player=user, coin=room.bingo_price,
-                                          card_info=card_info, winning_state=False, date=time)
+                                          card_info=numbers, winning_state=False, time=time, match_state=match_state)
+                        a_bid.match_state = numbers
                         a_bid.save()
                     user_coin.coin -= room.bingo_price*card_count
                     user_coin.save()

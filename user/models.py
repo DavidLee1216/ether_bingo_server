@@ -94,6 +94,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
     auth_code = models.TextField(_('auth code'), max_length=10, blank=True)
+    black_user = models.BooleanField(default=False)
     objects = UserManager()
 
     USERNAME_FIELD = 'username'                # set email as identifier

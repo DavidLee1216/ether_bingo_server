@@ -1,3 +1,4 @@
+from tabnanny import verbose
 from django.db import models
 from user.models import User
 
@@ -7,7 +8,10 @@ class UserProfile(models.Model):  # user profile
     country = models.CharField(max_length=200, blank=False)  # country
     city = models.CharField(max_length=200, blank=False)  # city
     birthday = models.DateField(blank=False)  # birthday
-    sex = models.CharField(max_length=20, blank=False)  # sex
+    SEX_CHOICES = (('M', 'Male'), ('F', 'Female'))
+    sex = models.CharField(max_length=20, blank=False, default='M',
+                           choices=SEX_CHOICES)  # sex
+    main_wallet = models.CharField(max_length=255, blank=False, default='')
 
 
 class UserCoin(models.Model):  # user coin
@@ -18,7 +22,7 @@ class UserCoin(models.Model):  # user coin
 
 # current user coin + total consumed amount = total bought amount = coin amount of block
 class UserCoinBuyHistory(models.Model):  # user's coin purchase history
-    user = models.OneToOneField(User, on_delete=models.CASCADE)  # user
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # user
     amount = models.IntegerField(
         blank=False, default=0)  # amount
     date = models.DateTimeField(auto_now=True, blank=False)  # puchase date

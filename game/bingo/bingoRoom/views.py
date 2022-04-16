@@ -21,11 +21,11 @@ import datetime
 def bid(request):
     room_id = request.data.get('room_id')
     username = request.data.get('username')
-    curr_price = request.data.get('curr_price')
     try:
         user = User.objects.get(username=username)
         room = BingoRoom.objects.get(id=room_id)
-        room_auction = BingoRoomAuction.objects.filter(room=room)
+        room_auction = BingoRoomAuction.objects.filter(
+            room=room, live=True).first()
         if room_auction:
             last_bid_history = BingoRoomAuctionBidHistory.objects.filter(
                 room_auction=room_auction).order_by('-id').first()
@@ -34,10 +34,16 @@ def bid(request):
             try:
                 user_coin = UserCoin.objects.get(user=user)
                 if check_user_coin(user=user, user_coin=user_coin):
-                    bid_price = curr_price + room_auction.price_per_bid
+                    if last_bid_history is None:
+                        bid_price = room_auction.start_price
+                        bid_id_of_auction = 1
+                    else:
+                        curr_price = last_bid_history.bid_price
+                        bid_price = curr_price + room_auction.price_per_bid
+                        bid_id_of_auction = last_bid_history.bid_id_of_auction+1
                     bid_time = datetime.datetime.utcnow()
                     bid = BingoRoomAuctionBidHistory(
-                        room_auction=room_auction, bidder=user, bid_id_of_auction=last_bid_history.bid_id_of_auction+1, bid_price=bid_price, bid_time=bid_time, win_state=False)
+                        room_auction=room_auction, bidder=user, bid_id_of_auction=bid_id_of_auction, bid_price=bid_price, bid_time=bid_time, win_state=False)
                     bid.save()
                     user_coin.coin -= room_auction.coin_per_bid
                     user_coin.save()
