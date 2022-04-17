@@ -26,6 +26,41 @@ def create_random_user_accounts(total):
     return '{} random users created with success!'.format(total)
 
 
+@shared_task
+def create_bingo_rooms(count):  # initial bingo rooms create
+    for i in range(1, count+1):
+        room = BingoRoom.objects.create(id=i, bingo_price=i, hold_on=False)
+        room_setting = BingoRoomSetting.objects.filter(room=room).first()
+        if room_setting is None:
+            room_setting = BingoRoomSetting.objects.create(
+                room=room, auction_start_price=i*0.1, auction_price_interval_per_bid=i*0.01)
+
+
+@shared_task
+def assign_room_ownership(username, room_id, paid_eth, from_date=None, period=30):
+    try:
+        user = User.objects.get(username=username)
+        room = BingoRoom.objects.get(id=room_id)
+        room_history = BingoRoomHistory.objects.filter(
+            room=room, live=True).first()
+        if from_date is None:
+            if room_history is None:
+                from_date = datetime.datetime.utcnow()
+            else:
+                from_date = room_history.to_date
+        else:
+            from_date = datetime.datetime.strptime(
+                from_date, '%y/%m/%d %H:%M:%S')
+        end_time = from_date+datetime.timedelta(days=period)
+        if room_history:
+            room_history.live = False
+        room_history = BingoRoomHistory.objects.create(
+            room=room, owner=user, paid_eth=paid_eth, from_date=from_date, to_date=end_time, live=True)
+
+    except User.DoesNotExist:
+        pass
+
+
 def check_auction_available(room):
     auction_history = BingoRoomHistory.objects.filter(
         room=room, live=True).first()
@@ -48,12 +83,14 @@ def create_bingo_room_auction():  # create bingo room auction
     curr_time = datetime.datetime.utcnow()
     last_bingo_auction = BingoRoomAuction.objects.order_by('-id').first()
     last_room = last_bingo_auction.room
-    new_auction_bingo_room = BingoRoom.objects.filter(
-        id > last_room.id, hold_on=False).first()
-    if new_auction_bingo_room is None:
-        new_auction_bingo_room = BingoRoom.objects.filter(
-            hold_on=False).first()
-    if check_auction_available(new_auction_bingo_room) == False:
+    new_auction_bingo_rooms = BingoRoom.objects.filter(
+        hold_on=False).order_by('id')
+    auction_available = False
+    for new_auction_bingo_room in new_auction_bingo_rooms:
+        if check_auction_available(new_auction_bingo_room) and new_auction_bingo_room != last_room:
+            auction_available = True
+            break
+    if auction_available == False:
         return
     try:
         room_setting = BingoRoomSetting.objects.get(
@@ -207,9 +244,10 @@ def manage_bingo_game():
                         game.elapsed_time = elapsed_time
                 elif game.status == 'calling':
                     if elapsed_time >= calling_time:
-                        number = random.randint(1, 90)
+                        while number not in game.called_numbers:
+                            number = random.randint(1, 90)
                         game.last_number = number
-                        game.called_numbers = f"{game.called_numbers},{number}"
+                        game.called_numbers.append(number)
                         if match_game_number(number, game):
                             game.end_time = now_time
                             game.status = 'E'

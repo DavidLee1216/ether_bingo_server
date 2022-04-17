@@ -10,6 +10,9 @@ class BingoRoom(models.Model):  # room information
     bingo_price = models.IntegerField(blank=False)  # bingo price in coin
     hold_on = models.BooleanField(default=True)  # room is enalble or disable
 
+    def __str__(self):
+        return f'id:{self.id}, price:{self.bingo_price}, hold_on:{self.hold_on}'
+
 
 class BingoRoomSetting(models.Model):
     room = models.OneToOneField(BingoRoom, on_delete=models.CASCADE)
@@ -26,6 +29,9 @@ class BingoRoomSetting(models.Model):
         max_digits=8, decimal_places=5, blank=False)
     auction_coin_per_bid = models.IntegerField(default=10)
     auction_win_time_limit = models.IntegerField(default=3600)  # second
+
+    def __str__(self):
+        return f'room:{self.room}, min_attendee_count:{self.min_attendee_count}, selling_time:{self.selling_time}, calling_time:{self.calling_time}, auction_start_price:{self.auction_start_price}, auction_price_interval_per_bid:{self.auction_price_interval_per_bid}, auction_coin_per_bid:{self.auction_coin_per_bid}, auction_win_time_limit:{self.auction_win_time_limit}'
 
 
 class BingoRoomAuction(models.Model):  # room auction
@@ -50,6 +56,9 @@ class BingoRoomAuction(models.Model):  # room auction
     last_bid_elapsed_time = models.IntegerField(
         default=0)  # time after last bid
 
+    def __str__(self) -> str:
+        return f'room: {self.room}, start_date: {self.start_date}, end_date: {self.end_date}, start_price: {self.start_price}, coin_per_bid: {self.coin_per_bid}, price_per_bid: {self.price_per_bid}, winner: {self.winner}, live: {self.live}, time_limit: {self.time_limit}'
+
 
 class BingoRoomAuctionBidHistory(models.Model):  # room auction bid history
     id = models.IntegerField(blank=False, primary_key=True)
@@ -62,6 +71,9 @@ class BingoRoomAuctionBidHistory(models.Model):  # room auction bid history
         max_digits=8, decimal_places=5, blank=False)  # bid price of the bidder
     bid_time = models.DateTimeField(blank=False)
     win_state = models.BooleanField(blank=False)  # winning state of the bidder
+
+    def __str__(self) -> str:
+        return f'id: {self.id}, room_auction: {self.room_auction}, bidder: {self.bidder}, bid_id_auction: {self.bid_id_of_auction}, bid_price: {self.bid_price}, bid_time: {self.bid_time}, win_state: {self.win_state}'
 
 
 # room ownership history, it must be registered after pay
@@ -82,3 +94,6 @@ class BingoRoomHistory(models.Model):
         BingoRoomAuctionBidHistory, on_delete=models.DO_NOTHING, default=None)
     # room ownership is available or not
     live = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return f'room: {self.room}, auction: {self.auction}, owner: {self.owner}, paid_eth: {self.paid_eth}, from_date: {self.from_date}, to_date: {self.to_date}, winned_bid: {self.winned_bid}, live: {self.live}'

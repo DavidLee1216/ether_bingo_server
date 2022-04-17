@@ -233,6 +233,10 @@ CELERY_BEAT_SCHEDULE = {
     'create_bingo_room_auction': {
         'task': 'game.tasks.create_bingo_room_auction',
         'schedule': crontab(minute='0', hour='18')
+    },
+    'manage_bingo_room_auctions': {
+        'task': 'game.tasks.manage_bingo_room_auctions',
+        'schedule': 1
     }
 }
 

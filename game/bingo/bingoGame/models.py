@@ -10,11 +10,14 @@ from django.contrib.postgres.fields import ArrayField
 class BingoGameStatus(models.Model):
     status = models.CharField(max_length=50, null=False)
 
+    def __str__(self) -> str:
+        return f'{self.status}'
+
 
 class BingoGame(models.Model):  # one bingo game
     room = models.ForeignKey(BingoRoom, on_delete=models.CASCADE)  # room
-    called_numbers = models.CharField(
-        max_length=200, blank=False, default='')  # called numbers
+    called_numbers = ArrayField(
+        models.IntegerField(default=0))  # called numbers
     last_number = models.IntegerField(
         blank=True, default=0)  # last number
     start_time = models.DateTimeField(blank=False)  # start date time
@@ -30,6 +33,9 @@ class BingoGame(models.Model):  # one bingo game
         max_length=50, null=False, choices=GAME_STATUS, default='S')  # bingo game status
     live = models.BooleanField(blank=False, default=False)
 
+    def __str__(self) -> str:
+        return f'room: {self.room}, called_numbers: {self.called_numbers}'
+
 
 class BingoBids(models.Model):  # one bid for bingo game
     game = models.ForeignKey(
@@ -44,3 +50,6 @@ class BingoBids(models.Model):  # one bid for bingo game
     default_match_state_row = [False]*27
     match_state = ArrayField(ArrayField(
         models.BooleanField(default=False), size=27), size=6, default=None)  # match state with called numbers
+
+    def __str__(self) -> str:
+        return f'game: {self.game}, player: {self.player}, coin: {self.coin}, card_info: {self.card_info}, time: {self.time}, winning_state: {self.match_state}'

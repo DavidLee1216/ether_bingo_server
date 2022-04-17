@@ -78,3 +78,11 @@ def get_room_auction_user_info(request):
         return Response(data=data, status=status.HTTP_200_OK)
     except BingoRoom.DoesNotExist:
         return Response(data='the room does not exist', status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@login_required
+def pay_for_winner(request):
+    username = request.data.get('username')
+    room_id = request.data.get('room_id')
+    amount_to_pay = request.data.get('amount')
