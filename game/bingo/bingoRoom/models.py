@@ -50,7 +50,7 @@ class BingoRoomAuction(models.Model):  # room auction
     winner = models.ForeignKey(
         User, on_delete=models.DO_NOTHING, null=True, default=None)  # final winner of the auction
     # whether the auction is live or not
-    live = models.BooleanField(blank=False)  # auction is live or not
+    live = models.BooleanField(default=False)
     # time in second until bidder wins
     time_limit = models.IntegerField(default=3600)
     last_bid_elapsed_time = models.IntegerField(
@@ -71,9 +71,12 @@ class BingoRoomAuctionBidHistory(models.Model):  # room auction bid history
         max_digits=8, decimal_places=5, blank=False)  # bid price of the bidder
     bid_time = models.DateTimeField(blank=False)
     win_state = models.BooleanField(blank=False)  # winning state of the bidder
+    PAID_STATES = [(0, 'not'), (1, 'paid'), (2, 'cancelled')]
+    paid_state = models.CharField(
+        max_length=10, choices=PAID_STATES, default=0)
 
     def __str__(self) -> str:
-        return f'id: {self.id}, room_auction: {self.room_auction}, bidder: {self.bidder}, bid_id_auction: {self.bid_id_of_auction}, bid_price: {self.bid_price}, bid_time: {self.bid_time}, win_state: {self.win_state}'
+        return f'id: {self.id}, room_auction: {self.room_auction}, bidder: {self.bidder}, bid_id_auction: {self.bid_id_of_auction}, bid_price: {self.bid_price}, bid_time: {self.bid_time}, win_state: {self.win_state}, paid_state: {self.paid_state}'
 
 
 # room ownership history, it must be registered after pay

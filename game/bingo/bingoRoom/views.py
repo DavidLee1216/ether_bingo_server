@@ -1,6 +1,8 @@
 from datetime import datetime
+from turtle import delay
 from django.shortcuts import render
 from game.models import UserCoin
+from game.tasks import assign_room_ownership
 from game.views import check_user_coin
 
 from user.models import User
@@ -13,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.core.mail import send_mail
 import datetime
 
@@ -25,7 +28,7 @@ def bid(request):
         user = User.objects.get(username=username)
         room = BingoRoom.objects.get(id=room_id)
         room_auction = BingoRoomAuction.objects.filter(
-            room=room, live=True).first()
+            room=room, live=1).first()
         if room_auction:
             last_bid_history = BingoRoomAuctionBidHistory.objects.filter(
                 room_auction=room_auction).order_by('-id').first()
@@ -63,19 +66,29 @@ def bid(request):
 @login_required
 def get_room_auction_user_info(request):
     room_id = request.data.get('room_id')
+    last_id = request.data.get('last_id')
     try:
-        room = BingoRoom.objects.get(id=room_id, live=True)
+        room = BingoRoom.objects.get(id=room_id)
         room_auction = BingoRoomAuction.objects.filter(
             room=room, live=True).order_by('-id').first()
         total_bids = BingoRoomAuctionBidHistory.objects.filter(
-            room_auction=room_auction)
-        arr = []
-        for bid in total_bids:
-            a_data = {'bid_id_of_auction': bid.bid_id_of_auction, 'username': bid.bidder.username,
-                      'bid_price': bid.bid_price, 'bid_time': bid.bid_time}
-            arr.append(a_data)
-        data = {'data': arr}
-        return Response(data=data, status=status.HTTP_200_OK)
+            room_auction=room_auction, bid_id_of_auction__gt=last_id)
+        if total_bids:
+            arr = []
+            win_bid = None
+            for bid in total_bids:
+                a_data = {'bid_id_of_auction': bid.bid_id_of_auction, 'username': bid.bidder.username,
+                          'bid_price': bid.bid_price, 'bid_time': bid.bid_time}
+                arr.append(a_data)
+                if bid.win_state == True:
+                    win_bid = bid
+            data = {'data': arr, 'winner': None}
+            if win_bid is not None:
+                data.winner = {'username': win_bid.bidder.username,
+                               'bid_price': win_bid.bid_price}
+            return Response(data=data, status=status.HTTP_200_OK)
+        else:
+            return Response(data='success', status=status.HTTP_204_NO_CONTENT)
     except BingoRoom.DoesNotExist:
         return Response(data='the room does not exist', status=status.HTTP_404_NOT_FOUND)
 
@@ -86,3 +99,31 @@ def pay_for_winner(request):
     username = request.data.get('username')
     room_id = request.data.get('room_id')
     amount_to_pay = request.data.get('amount')
+    try:
+        user = User.objects.get(username=username)
+        winned_bingo_bid = BingoRoomAuctionBidHistory.objects.filter(
+            bidder=user, win_state=True, paid_state=0)
+        if winned_bingo_bid:
+            auction = winned_bingo_bid.room_auction
+            auction.live = False
+            room_history = assign_room_ownership(
+                username, room_id, amount_to_pay, winned_bingo_bid.room_auction).delay()
+            data = {'from': room_history.from_date, 'to': room_history.to_date}
+            return Response(data=data, status=status.HTTP_200_OK)
+
+    except User.DoesNotExist:
+        return Response(data='the user does not exist', status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@login_required
+def arrange_room_auctions(request):
+    data = []
+    room_auctions = BingoRoomAuction.objects.filter(live=True, winner=None)
+    for auction in room_auctions:
+        last_bid = BingoRoomAuctionBidHistory.objects.filter(
+            room_auction=auction).order_by('-id').first()
+        auction_data = {'room_id': auction.room.id, 'last_bid_id': last_bid.bid_id_of_auction,
+                        'username': last_bid.bidder.username, 'bid_price': last_bid.bid_price, 'elapsed_time': auction.last_bid_elapsed_time}
+        data.append(auction_data)
+    return Response(data=data, status=status.HTTP_200_OK)
