@@ -107,7 +107,7 @@ def pay_for_winner(request):
             auction = winned_bingo_bid.room_auction
             auction.live = False
             room_history = assign_room_ownership(
-                username, room_id, amount_to_pay, winned_bingo_bid.room_auction).delay()
+                username, room_id, amount_to_pay, winned_bingo_bid.room_auction)
             data = {'from': room_history.from_date, 'to': room_history.to_date}
             return Response(data=data, status=status.HTTP_200_OK)
 

@@ -4,7 +4,7 @@ from game.models import UserCoin
 from .models import User
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, login, logout
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -15,9 +15,11 @@ from .serializer import UserSerializer
 from .random_n_digit import random_with_N_digits
 from .get_token import get_tokens_for_user
 from ether_bingo_server import settings
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 
 @api_view(['POST'])
+@permission_classes((AllowAny, ))
 def signup(request):
     email = request.data.get('email', False)
     password = request.data.get('password', False)
@@ -53,6 +55,7 @@ def signup(request):
 
 
 @api_view(['POST'])
+@permission_classes((AllowAny, ))
 def resend_auth_email(request):
     email = request.data.get('email', False)
     first_name = request.data.get('first_name', False)
@@ -79,6 +82,7 @@ def resend_auth_email(request):
 
 
 @api_view(['POST'])
+@permission_classes((AllowAny, ))
 def signin(request):
     email = request.data.get('email', False)
     password = request.data.get('password', False)
@@ -97,6 +101,7 @@ def signin(request):
 
 
 @api_view(['POST'])
+@permission_classes((AllowAny, ))
 def authorize(request):
     id = request.data.get('id', False)
     key = request.data.get('key', False)
@@ -117,6 +122,7 @@ def authorize(request):
 
 
 @api_view(['GET'])
+@permission_classes((AllowAny, ))
 def email_authorize(request, id, key):
     user = User.objects.get(id=id)
     original_key = user.auth_code

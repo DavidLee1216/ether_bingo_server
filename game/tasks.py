@@ -36,6 +36,9 @@ def create_bingo_rooms(count):  # initial bingo rooms create
                 room=room, auction_start_price=i*0.1, auction_price_interval_per_bid=i*0.01)
 
 
+# create_bingo_rooms.delay(30)
+
+
 @shared_task
 def assign_room_ownership(username, room_id, paid_eth, auction=None, from_date=None, period=30):
     try:
@@ -169,8 +172,8 @@ game_setting_selling_time, game_setting_selling_calling_transition_time, game_se
 @shared_task
 def get_game_settings():
     print('get_game_settings called')
-    global game_setting_selling_time, game_setting_selling_calling_transition_time, game_setting_calling_time, game_setting_end_caching_time, game_setting_number_calling_time, game_setting_min_attendee_count
-    game_setting_selling_time, game_setting_selling_calling_transition_time, game_setting_calling_time, game_setting_number_calling_time, game_setting_end_caching_time, game_setting_min_attendee_count = get_bingo_game_settings()
+    global game_setting_selling_time, game_setting_selling_calling_transition_time, game_setting_calling_time, game_setting_end_caching_time, game_setting_min_attendee_count
+    game_setting_selling_time, game_setting_selling_calling_transition_time, game_setting_calling_time, game_setting_end_caching_time, game_setting_min_attendee_count = get_bingo_game_settings()
 
 
 def manage_one_auction(auction, curr_time):  # returns if the auction winned or not
@@ -204,7 +207,6 @@ def manage_bingo_room_auctions():
 
 @shared_task
 def manage_bingo_game():
-    print('manage_bingo_game called!')
     global game_setting_selling_time, game_setting_selling_calling_transition_time, game_setting_calling_time, game_setting_end_caching_time, game_setting_min_attendee_count
     rooms = BingoRoom.objects.filter(hold_on=False)
     now_time = datetime.datetime.utcnow()
@@ -217,10 +219,12 @@ def manage_bingo_game():
             selling_time = room_setting.selling_time
             calling_time = room_setting.calling_time
             min_attendee_count = room_setting.min_attendee_count
+
         game = BingoGame.objects.filter(room=room, live=True).first()
         if game is None:
             end_time = now_time+datetime.timedelta(minutes=30)
-            game = BingoGame.objects.create(room=room, start_time=now_time,
+            print(f'room: {room.id} creating')
+            game = BingoGame.objects.create(room=room, called_numbers=[], start_time=now_time,
                                             end_time=end_time, status='selling', live=True)
         else:
             elapsed_time = game.elapsed_time+1

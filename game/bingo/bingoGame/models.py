@@ -17,7 +17,7 @@ class BingoGameStatus(models.Model):
 class BingoGame(models.Model):  # one bingo game
     room = models.ForeignKey(BingoRoom, on_delete=models.CASCADE)  # room
     called_numbers = ArrayField(
-        models.IntegerField(default=0))  # called numbers
+        models.IntegerField(default=0), blank=True)  # called numbers
     last_number = models.IntegerField(
         blank=True, default=0)  # last number
     start_time = models.DateTimeField(blank=False)  # start date time
