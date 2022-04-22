@@ -20,6 +20,7 @@ urlpatterns = [
 
 urlpatterns += [
     path('profile/set/', views.set_profile, name='set_profile'),
-    path('profile/<str:username>/', views.get_profile, name='get_profile'),
-    path('coin/buy/', views.buy_coin, name='buy_coin')
+    path('profile/get/', views.get_profile, name='get_profile'),
+    path('coin/buy/', views.buy_coin, name='buy_coin'),
+    path('coin/get/', views.get_coin, name='get_coin')
 ]

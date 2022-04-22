@@ -1,6 +1,6 @@
 import stat
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,16 +11,17 @@ from game.bingo.bingoRoom.models import BingoRoomAuctionBidHistory
 from .models import GameSettings, UserProfile, UserCoin, UserCoinBuyHistory
 from user.models import User
 from .serializer import UserProfileSerializer, UserCoinSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 
-@api_view(['PUT'])
+@api_view(['POST'])
 @login_required
 def set_profile(request):
     username = request.data.get('username')
     country = request.data.get('country')
     city = request.data.get('city')
-    birthday = request.data.get('birthday')
     sex = request.data.get('sex')
+    main_wallet = request.data.get('wallet')
     user = User.objects.filter(username=username).first()
 
     if user is not None:
@@ -29,11 +30,11 @@ def set_profile(request):
             profile = profiles[0]
             profile.country = country
             profile.city = city
-            profile.birthday = birthday
             profile.sex = sex
+            profile.main_wallet = main_wallet
         else:
             profile = UserProfile(user=user, country=country,
-                                  city=city, birthday=birthday, sex=sex)
+                                  city=city, sex=sex, main_wallet=main_wallet)
         profile.save()
 
         return Response(data='success', status=status.HTTP_200_OK)
@@ -41,9 +42,10 @@ def set_profile(request):
         return Response(data='user does not exist', status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 @login_required
-def get_profile(request, username):
+def get_profile(request):
+    username = request.data.get('username')
     user = User.objects.filter(username=username).first()
     if user is not None:
         try:
@@ -70,24 +72,37 @@ def buy_coin(request):  # api to update coin when user buy
     address = request.data.get('address')  # user's wallet address
     try:
         user = User.objects.get(username=username)
-        coin_price = GameSettings.objects.filter('coin_price').first()
-        if coin_price:
-            coin_price = float(coin_price)
-            coin_amount = int(amount/coin_price)
-            buy_coin_transaction(user, coin_amount, address)
-            try:
-                usercoin = UserCoin.objects.get(user=user)
-                usercoin.coin += 1  # coin_amount
-                usercoin.save()
-                userCoinSerialized = UserCoinSerializer(usercoin)
-                return Response(data=userCoinSerialized.data, status=status.HTTP_202_ACCEPTED)
-            except UserCoin.DoesNotExist:
-                usercoin = UserCoin(user=user, coin=coin_amount)
-                usercoin.save()
-                userCoinSerialized = UserCoinSerializer(usercoin)
-                return Response(data=userCoinSerialized.data, status=status.HTTP_201_CREATED)
+        coin_amount = int(amount)
+        buy_coin_transaction(user, coin_amount, address)
+        try:
+            usercoin = UserCoin.objects.get(user=user)
+            usercoin.coin += coin_amount  # coin_amount
+            usercoin.save()
+            userCoinSerialized = UserCoinSerializer(usercoin)
+            return Response(data=userCoinSerialized.data, status=status.HTTP_202_ACCEPTED)
+        except UserCoin.DoesNotExist:
+            usercoin = UserCoin(user=user, coin=coin_amount)
+            usercoin.save()
+            userCoinSerialized = UserCoinSerializer(usercoin)
+            return Response(data=userCoinSerialized.data, status=status.HTTP_201_CREATED)
     except User.DoesNotExist:
         return Response(data='user does not exist', status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@login_required
+def get_coin(request):
+    username = request.data.get('username')
+    try:
+        user = User.objects.get(username=username)
+        usercoin = UserCoin.objects.get(user=user)
+        userCoinSerialized = UserCoinSerializer(usercoin)
+
+        return Response(data=userCoinSerialized.data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response(data='user does not exist', status=status.HTTP_404_NOT_FOUND)
+    except UserCoin.DoesNotExist:
+        return Response(data='user does not have coin', status=status.HTTP_204_NO_CONTENT)
 
 
 def check_user_coin(user, user_coin):  # check coin to prevent hacking

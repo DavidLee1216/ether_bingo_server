@@ -7,14 +7,13 @@ class UserProfile(models.Model):  # user profile
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # user
     country = models.CharField(max_length=200, blank=False)  # country
     city = models.CharField(max_length=200, blank=False)  # city
-    birthday = models.DateField(blank=False)  # birthday
     SEX_CHOICES = (('M', 'Male'), ('F', 'Female'))
     sex = models.CharField(max_length=20, blank=False, default='M',
                            choices=SEX_CHOICES)  # sex
     main_wallet = models.CharField(max_length=255, blank=False, default='')
 
     def __str__(self) -> str:
-        return f'user: {self.user}, country: {self.country}, city: {self.city}, birthday: {self.birthday}, sex: {self.sex}, main_wallet: {self.main_wallet}'
+        return f'username: {self.user.username}, country: {self.country}, city: {self.city}, sex: {self.sex}, main_wallet: {self.main_wallet}'
 
 
 class UserCoin(models.Model):  # user coin
