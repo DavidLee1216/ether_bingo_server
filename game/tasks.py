@@ -122,6 +122,13 @@ def create_custom_room_auction(room_id):
         pass
 
 
+# create_custom_room_auction(1)
+# create_custom_room_auction(2)
+# create_custom_room_auction(3)
+# create_custom_room_auction(4)
+# create_custom_room_auction(5)
+
+
 def get_bingo_game_settings():
     game_setting_end_caching_time = GameSettings.objects.filter(
         key='end_caching_time').first()
@@ -181,6 +188,7 @@ def manage_one_auction(auction, curr_time):  # returns if the auction winned or 
         room_auction=auction).order_by('-id').first()
     if last_bid:
         auction.last_bid_elapsed_time += 1
+        auction.save()
         if auction.last_bid_elapsed_time > auction.time_limit:
             auction.end_date = curr_time
             auction.winner = last_bid.bidder

@@ -23,9 +23,13 @@ def set_profile(request):
     sex = request.data.get('sex')
     main_wallet = request.data.get('wallet')
     user = User.objects.filter(username=username).first()
+    other_user_with_same_wallet = UserProfile.objects.filter(
+        main_wallet=main_wallet).exclude(user=user).first()
+    if other_user_with_same_wallet:
+        return Response(data='main wallet conflict', status=status.HTTP_409_CONFLICT)
 
     if user is not None:
-        profiles = UserProfile.objects.filter(user_id=user)
+        profiles = UserProfile.objects.filter(user=user)
         if len(profiles) > 0:
             profile = profiles[0]
             profile.country = country
@@ -114,6 +118,6 @@ def check_user_coin(user, user_coin):  # check coin to prevent hacking
         bidder=user)
     room_auction_consumed_coins = sum(
         [x.room_auction.coin_per_bid for x in user_room_auction_history])
-    if user_coin == (bought_coins-bingo_consumed_coins-room_auction_consumed_coins):
+    if user_coin.coin == (bought_coins-bingo_consumed_coins-room_auction_consumed_coins):
         return True
     return False

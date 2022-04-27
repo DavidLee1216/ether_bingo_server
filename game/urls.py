@@ -14,7 +14,7 @@ entities = [GAME_DIR+'.'+directory for GAME_DIR in GAME_DIRS
                 and directory != '__pycache__')]
 
 urlpatterns = [
-    re_path(r'^', include('{}.{}.urls'.format(GAME_APP_DIR, entity)))
+    re_path(r'^bingo/', include('{}.{}.urls'.format(GAME_APP_DIR, entity)))
     for entity in entities
 ]
 

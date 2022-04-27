@@ -111,8 +111,10 @@ def authorize(request):
         user.is_active = True
         user.save()
         user_serialized = UserSerializer(user)
-        user_coin = UserCoin(user=user, coin=0)
-        user_coin.save()
+        user_coin = UserCoin.objects.filter(user=user).first()
+        if user_coin is None:
+            user_coin = UserCoin(user=user, coin=0)
+            user_coin.save()
         token = get_tokens_for_user(user)
         login(request, user)
         data = {"user": user_serialized.data, "token": token}

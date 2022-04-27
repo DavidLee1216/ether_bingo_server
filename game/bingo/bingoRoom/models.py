@@ -61,7 +61,7 @@ class BingoRoomAuction(models.Model):  # room auction
 
 
 class BingoRoomAuctionBidHistory(models.Model):  # room auction bid history
-    id = models.IntegerField(blank=False, primary_key=True)
+    id = models.AutoField(primary_key=True)
     room_auction = models.ForeignKey(
         BingoRoomAuction, on_delete=models.CASCADE)  # room auction info
     bidder = models.ForeignKey(User, on_delete=models.DO_NOTHING)  # bidder

@@ -8,5 +8,8 @@ urlpatterns = [
     path('bingo_room_bid/', views.bid, name='bingo_room_bid'),
     path('get_room_auction_user_info/', views.get_room_auction_user_info,
          name='get_room_auction_user_info'),
-    path('pay_for_winner/', views.pay_for_winner, name='pay_for_winner')
+    path('pay_for_winner/', views.pay_for_winner, name='pay_for_winner'),
+    path('get_room_auctions/', views.arrange_room_auctions,
+         name='get_room_auctions'),
+    path('get_room_setting/', views.get_room_setting, name='get_room_setting'),
 ]
