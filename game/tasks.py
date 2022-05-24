@@ -44,21 +44,24 @@ def assign_room_ownership(username, room_id, paid_eth, auction=None, from_date=N
     try:
         user = User.objects.get(username=username)
         room = BingoRoom.objects.get(id=room_id)
-        room_history = BingoRoomHistory.objects.filter(
-            room=room, live=True).first()
+        curr_owner_room_history = BingoRoomHistory.objects.filter(
+            id=room.id).first()
         if from_date is None:
-            if room_history is None:
+            if curr_owner_room_history is None:
                 from_date = datetime.datetime.utcnow()
             else:
-                from_date = room_history.to_date
+                from_date = curr_owner_room_history.to_date
         else:
             from_date = datetime.datetime.strptime(
                 from_date, '%y/%m/%d %H:%M:%S')
         end_time = from_date+datetime.timedelta(days=period)
-        if room_history:
-            room_history.live = False
+        # if curr_owner_room_history:
+        #     curr_owner_room_history.live = False
         room_history = BingoRoomHistory.objects.create(
-            room=room, owner=user, paid_eth=paid_eth, auction=auction, from_date=from_date, to_date=end_time, live=True)
+            room=room, owner=user, paid_eth=paid_eth, auction=auction, from_date=from_date, to_date=end_time, live=False)
+        if auction:
+            auction.live = False
+            auction.save()
         return room_history
     except User.DoesNotExist:
         return None
@@ -209,9 +212,19 @@ def manage_bingo_room_auctions():
     for roomAuction in roomAuctions:
         res = manage_one_auction(roomAuction, curr_time)
         # winned_room__auctions.append(res)
-    pendingAuctions = BingoRoomAuction.objects.filter(
-        live=False).exclude(winner=None)
-
+    # pendingAuctions = BingoRoomAuction.objects.filter(
+    #     live=True).exclude(winner=None)
+    rooms = BingoRoom.objects.filter(hold_on=False)
+    curr_time = datetime.datetime.utcnow()
+    for room in rooms:
+        owner_history_id = room.owner_room_history_id
+        owner_history = BingoRoomHistory.objects.filter(id=owner_history_id).first()
+        if owner_history.to_date < curr_time:
+            room.owner_room_history_id = 0
+        last_owner_history = BingoRoomHistory.objects.filter(from_date__lte=curr_time, to_date__gt=curr_time).first()
+        if last_owner_history:
+            room.owner_room_history_id = last_owner_history.id
+        room.save()
 
 @shared_task
 def manage_bingo_game():
@@ -252,7 +265,9 @@ def manage_bingo_game():
                     if elapsed_time >= selling_time:
                         if game.total_cards_count >= min_attendee_count:
                             game.status = 'transition'
-                        game.elapsed_time = selling_time-60
+                            game.elapsed_time = 0
+                        else:
+                            game.elapsed_time = selling_time-60
                     else:
                         game.elapsed_time = elapsed_time
                 elif game.status == 'transition':

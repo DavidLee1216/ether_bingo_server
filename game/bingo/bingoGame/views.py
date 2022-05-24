@@ -12,10 +12,12 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from .models import BingoGame, BingoBids, BingoGameStatus
 from .serializer import BingoGameSerializer, BingoBidsSerializer
-from game.bingo.bingoRoom.models import BingoRoom, BingoRoomAuctionBidHistory
+from game.bingo.bingoRoom.models import BingoRoom, BingoRoomAuctionBidHistory, BingoRoomHistory, BingoRoomSetting
 from game.models import UserCoin, UserCoinBuyHistory
 from user.models import User
 from game.views import check_user_coin
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 
 @api_view(['POST'])
@@ -53,7 +55,7 @@ def buy_ticket(request):
                             0, 27)] for j in range(0, 6)]
                         a_bid = BingoBids(game=game, player=user, coin=room.bingo_price,
                                           card_info=numbers, winning_state=False, time=time, match_state=match_state)
-                        a_bid.match_state = numbers
+                        # a_bid.match_state = numbers
                         a_bid.save()
                     user_coin.coin -= room.bingo_price*card_count
                     user_coin.save()
@@ -72,19 +74,79 @@ def buy_ticket(request):
 
 @api_view(['POST'])
 @login_required
-def get_bingo_game_user_info(request):
+def get_bingo_game_general_info(request):
     room_id = request.data.get('room_id')
     try:
-        room = BingoRoom.objects.get(id=room_id, live=True)
+        room = BingoRoom.objects.get(id=room_id, hold_on=False)
+        owner_history = BingoRoomHistory.objects.filter(
+            id=room.owner_room_history_id).first()
+        if owner_history:
+            owner = owner_history.owner.username
+        else:
+            owner = ''
         game = BingoGame.objects.filter(
             room=room, live=True).order_by('-id').first()
-        arr = []
-        total_bids = BingoBids.objects.filter(game=game)
-        for bid in total_bids:
-            a_data = {'username': bid.user.username,
-                      'card_info': bid.card_info, 'time': bid.date}
-            arr.append(a_data)
-        data = {'data': arr}
+
+        data = {'room_id': room.id, 'owner': owner, 'price': room.bingo_price}
         return Response(data=data, status=status.HTTP_200_OK)
     except BingoRoom.DoesNotExist:
         return Response(data='the room does not exist', status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes((AllowAny, ))
+def get_bingo_games_info(request):
+    arr = []
+    games = BingoGame.objects.filter(live=True).order_by('id')
+    for game in games:
+        room = game.room
+        owner_history = BingoRoomHistory.objects.filter(
+            id=room.owner_room_history_id).first()
+        if owner_history:
+            owner = owner_history.owner.username
+        else:
+            owner = ''
+        room_setting = BingoRoomSetting.objects.filter(room=room).first()
+        a_data = {'id': room.id, 'owner': owner,
+                  'player_count': game.total_cards_count, 'step_type': game.status, 'time_left': room_setting.selling_time-game.elapsed_time, 'price': room.bingo_price}
+        arr.append(a_data)
+    data = {'data': arr}
+    return Response(data=data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@login_required
+def get_bingo_game_info(request):  # call it per 0.2s
+    room_id = request.data.get('room_id')
+    room = BingoRoom.objects.filter(id=room_id, hold_on=False).first()
+    owner_history = BingoRoomHistory.objects.filter(
+        id=room.owner_room_history_id).first()
+    if owner_history:
+        owner = owner_history.owner.username
+    else:
+        owner = ''
+    if room is None:
+        return Response(data='the room does not exist', status=status.HTTP_404_NOT_FOUND)
+    game = BingoGame.objects.filter(room=room, live=True).first()
+    if game is None:
+        return Response(data='the game does not exist', status=status.HTTP_404_NOT_FOUND)
+    game_status = game.status
+    if game_status == 'selling':
+        bids = BingoBids.objects.filter(game=game)
+        arr = []
+        for bid in bids:
+            a_data = {'username': bid.player.username,
+                      'numbers': bid.card_info}
+            arr.append(a_data)
+        data = {'owner': owner, 'status': game_status, 'data': arr}
+        return Response(data=data, status=status.HTTP_200_OK)
+    elif game_status == 'calling':
+        data = {'owner': owner, 'status': game_status, 'last_number': game.last_number,
+                'called_numbers': game.called_numbers}
+        return Response(data=data, status=status.HTTP_200_OK)
+    elif game_status == 'transition':
+        data = {'owner': owner, 'status': game_status}
+        return Response(data=data, status=status.HTTP_200_OK)
+    else:
+        data = {'owner': owner, 'status': 'ended'}
+        return Response(data=data, status=status.HTTP_200_OK)

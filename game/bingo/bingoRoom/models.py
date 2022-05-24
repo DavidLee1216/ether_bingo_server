@@ -9,6 +9,7 @@ class BingoRoom(models.Model):  # room information
         primary_key=True, unique=True)  # room number
     bingo_price = models.IntegerField(blank=False)  # bingo price in coin
     hold_on = models.BooleanField(default=True)  # room is enalble or disable
+    owner_room_history_id = models.IntegerField(default=0)
 
     def __str__(self):
         return f'id:{self.id}, price:{self.bingo_price}, hold_on:{self.hold_on}'
