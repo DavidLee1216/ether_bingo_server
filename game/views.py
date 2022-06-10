@@ -113,7 +113,7 @@ def check_user_coin(user, user_coin):  # check coin to prevent hacking
     user_coin_buy_history = UserCoinBuyHistory.objects.filter(user=user)
     bought_coins = sum([x.amount for x in user_coin_buy_history])
     user_bingo_play_history = BingoBids.objects.filter(player=user)
-    bingo_consumed_coins = sum([x.amount for x in user_bingo_play_history])
+    bingo_consumed_coins = sum([x.coin for x in user_bingo_play_history])
     user_room_auction_history = BingoRoomAuctionBidHistory.objects.filter(
         bidder=user)
     room_auction_consumed_coins = sum(

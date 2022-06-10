@@ -12,4 +12,8 @@ urlpatterns = [
          name='get_bingo_game_info'),
     path('get_bingo_game_general_info/', views.get_bingo_game_general_info,
          name='get_bingo_game_general_info'),
+    path('get_bingo_tickets/', views.get_bingo_tickets, name='get_bingo_tickets'),
+    path('get_my_bingo_tickets/', views.get_my_bingo_tickets,
+         name='get_my_bingo_tickets'),
+
 ]
