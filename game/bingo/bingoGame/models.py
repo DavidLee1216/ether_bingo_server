@@ -50,6 +50,8 @@ class BingoBids(models.Model):  # one bid for bingo game
     default_match_state_row = [False]*27
     match_state = ArrayField(ArrayField(
         models.BooleanField(default=False), size=27), size=6, default=None)  # match state with called numbers
+    earning = models.DecimalField(
+        max_digits=8, decimal_places=5, blank=True, default=0)  # earning in ETH
 
     def __str__(self) -> str:
         return f'game: {self.game}, player: {self.player}, coin: {self.coin}, card_info: {self.card_info}, time: {self.time}, winning_state: {self.match_state}'

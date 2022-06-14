@@ -1,5 +1,6 @@
 from tabnanny import verbose
 from django.db import models
+from game.bingo.bingoGame.models import BingoGame
 from user.models import User
 
 
@@ -11,9 +12,10 @@ class UserProfile(models.Model):  # user profile
     sex = models.CharField(max_length=20, blank=False, default='M',
                            choices=SEX_CHOICES)  # sex
     main_wallet = models.CharField(max_length=255, blank=False, default='')
+    earning_verified = models.BooleanField(default=False, blank=False)
 
     def __str__(self) -> str:
-        return f'username: {self.user.username}, country: {self.country}, city: {self.city}, sex: {self.sex}, main_wallet: {self.main_wallet}'
+        return f'username: {self.user.username}, country: {self.country}, city: {self.city}, sex: {self.sex}, main_wallet: {self.main_wallet}, earning_verified: {self.earning_verified}'
 
 
 class UserCoin(models.Model):  # user coin
@@ -36,6 +38,20 @@ class UserCoinBuyHistory(models.Model):  # user's coin purchase history
 
     def __str__(self) -> str:
         return f'user: {self.user}, amount: {self.amount}, date: {self.date}, wallet_address: {self.wallet_address}'
+
+
+class UserEarnings(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    game_id = models.IntegerField(blank=False, default=0)
+    GAME_KIND = [('B', 'bingo'), ]
+    game_kind = models.CharField(
+        max_length=255, choices=GAME_KIND, blank=False, default='B')
+    is_owner = models.BooleanField(default=False, blank=False)
+    earning = models.DecimalField(
+        max_digits=8, decimal_places=5, default=0, blank=False)
+
+    def __str__(self) -> str:
+        return f'user: {self.user}, game_id: {self.game_id}, game_kind: {self.game_kind}, is_owner: {self.is_owner}, earning: {self.earning}'
 
 
 class GameSettings(models.Model):  # game global settings

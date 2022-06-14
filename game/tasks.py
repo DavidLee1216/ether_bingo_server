@@ -164,7 +164,7 @@ def match_game_number(number, game):
         card_info = bingo_bid.card_info
         try:
             idx = card_info.index(number)
-            m, n = int(idx/6), idx % 6
+            m, n = int(idx/27), idx % 27
             bingo_bid.match_state[m][n] = True
             if all(bingo_bid.match_state[m]):
                 res = True
@@ -218,13 +218,20 @@ def manage_bingo_room_auctions():
     curr_time = datetime.datetime.utcnow()
     for room in rooms:
         owner_history_id = room.owner_room_history_id
-        owner_history = BingoRoomHistory.objects.filter(id=owner_history_id).first()
-        if owner_history.to_date < curr_time:
-            room.owner_room_history_id = 0
-        last_owner_history = BingoRoomHistory.objects.filter(from_date__lte=curr_time, to_date__gt=curr_time).first()
+        if owner_history_id > 0:
+            owner_history = BingoRoomHistory.objects.filter(
+                id=owner_history_id).first()
+            if owner_history and owner_history.to_date < curr_time:
+                room.owner_room_history_id = 0
+        last_owner_history = BingoRoomHistory.objects.filter(
+            from_date__lte=curr_time, to_date__gt=curr_time).first()
         if last_owner_history:
             room.owner_room_history_id = last_owner_history.id
+            last_owner_history.from_date = curr_time
+            last_owner_history.to_date = curr_time + \
+                datetime.timedelta(days=30)
         room.save()
+
 
 @shared_task
 def manage_bingo_game():
@@ -278,7 +285,8 @@ def manage_bingo_game():
                         game.elapsed_time = elapsed_time
                 elif game.status == 'calling':
                     if elapsed_time >= calling_time:
-                        while number not in game.called_numbers:
+                        number = random.randint(1, 90)
+                        while number in game.called_numbers:
                             number = random.randint(1, 90)
                         game.last_number = number
                         game.called_numbers.append(number)

@@ -15,5 +15,9 @@ urlpatterns = [
     path('get_bingo_tickets/', views.get_bingo_tickets, name='get_bingo_tickets'),
     path('get_my_bingo_tickets/', views.get_my_bingo_tickets,
          name='get_my_bingo_tickets'),
+    path('get_bingo_game_player_info/', views.get_bingo_game_player_info,
+         name='get_bingo_game_player_info'),
+    path('get_bingo_room_winner_history/', views.get_bingo_room_winner_history,
+         name='get_bingo_room_winner_history'),
 
 ]
