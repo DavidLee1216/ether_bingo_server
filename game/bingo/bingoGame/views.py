@@ -98,7 +98,7 @@ def get_bingo_game_general_info(request):
 @permission_classes((AllowAny, ))
 def get_bingo_games_info(request):
     arr = []
-    games = BingoGame.objects.filter(live=True).order_by('id')
+    games = BingoGame.objects.filter(live=True).order_by('room')
     for game in games:
         room = game.room
         owner_history = BingoRoomHistory.objects.filter(
@@ -195,7 +195,7 @@ def get_bingo_game_info(request):  # call it per 0.2s
         elif game_status == 'transition':
             data = {'owner': owner, 'status': game_status}
             return Response(data=data, status=status.HTTP_200_OK)
-        else:
+        else:  # ended
             winned_bids = BingoBids.objects.filter(
                 game=game, winning_state=True)
             arr = []
@@ -260,9 +260,11 @@ def get_bingo_room_winner_history(request):
     room_id = request.data.get('room_id')
     try:
         room = BingoRoom.objects.get(id=room_id, hold_on=False)
-        from_date = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+        now = datetime.datetime.utcnow()
+        from_date = now - datetime.timedelta(hours=24)
+        to_date = now
         games = BingoGame.objects.filter(
-            room=room, live=False, end_time__lte=from_date).order_by('-id')
+            room=room, live=False, end_time__gte=from_date, end_time__lte=to_date).order_by('-id')
         arr = []
         for game in games:
             winner_bids = BingoBids.objects.filter(
@@ -307,15 +309,14 @@ def get_room_owner_earning(request):
         else:
             return Response(data='no owner', status=status.HTTP_204_NO_CONTENT)
         games = BingoGame.objects.filter(
-            end_time__gte=owner_history.from_date, end_time_lt=owner_history.to_date)
+            end_time__gte=owner_history.from_date, end_time_lt=owner_history.to_date, live=False)
         total_earning = 0
         for game in games:
             earning = game.total_cards_count*room.bingo_price*0.001*0.1
             total_earning += earning
         curr_time = datetime.datetime.utcnow()
-        td = curr_time-owner_history.from_date  # time delta
-        period = (td.seconds//60) % 60  # time delta in hours
-        data = {'earning': total_earning, 'period': period}
+        period = str(curr_time-owner_history.from_date)  # time delta
+        data = {'earning': str(total_earning), 'period': period}
         return Response(data=data, status=status.HTTP_200_OK)
 
     except BingoRoom.DoesNotExist:

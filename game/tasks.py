@@ -4,12 +4,12 @@ import datetime
 from subprocess import STARTF_USESTDHANDLES
 from user.models import User
 from django.utils.crypto import get_random_string
-
+from django.utils import timezone
 from celery import shared_task
 from game.bingo.bingoGame.models import BingoBids, BingoGame
 
 from game.bingo.bingoRoom.models import BingoRoom, BingoRoomAuction, BingoRoomAuctionBidHistory, BingoRoomHistory, BingoRoomSetting
-from game.models import GameSettings
+from game.models import GameSettings, UserEarnings
 import random
 
 
@@ -206,7 +206,7 @@ def manage_one_auction(auction, curr_time):  # returns if the auction winned or 
 
 @shared_task
 def manage_bingo_room_auctions():
-    curr_time = datetime.datetime.utcnow()
+    curr_time = timezone.now()
     roomAuctions = BingoRoomAuction.objects.filter(live=True, winner=None)
     winned_room__auctions = []
     for roomAuction in roomAuctions:
@@ -215,7 +215,6 @@ def manage_bingo_room_auctions():
     # pendingAuctions = BingoRoomAuction.objects.filter(
     #     live=True).exclude(winner=None)
     rooms = BingoRoom.objects.filter(hold_on=False)
-    curr_time = datetime.datetime.utcnow()
     for room in rooms:
         owner_history_id = room.owner_room_history_id
         if owner_history_id > 0:
@@ -265,6 +264,27 @@ def manage_bingo_game():
                 if elapsed_time >= game_setting_end_caching_time:
                     game.live = False
                     game.elapsed_time = 0
+                    # set user, owner earnings
+                    winner_bids = BingoBids.objects.filter(
+                        game=game, winning_state=True)
+                    winner_earning = float(format(
+                        room.bingo_price*0.001*game.total_cards_count*0.85/len(winner_bids), '.5f'))
+                    owner_earning = float(format(
+                        room.bingo_price*0.001*game.total_cards_count*0.1, '.5f'))
+                    if room.owner_room_history_id != 0:
+                        owner_history = BingoRoomHistory.objects.filter(
+                            id=room.owner_room_history_id).first()
+                        if owner_history:
+                            owner = owner_history.owner
+                            if UserEarnings.objects.filter(user=owner, game_id=game.id, game_kind='bingo', is_owner=True).first() == None:
+                                UserEarnings.objects.create(
+                                    user=owner, game_id=game.id, game_kind='bingo', is_owner=True, earning=owner_earning)
+                    for winner_bid in winner_bids:
+                        winner_bid.earning = winner_earning
+                        winner_bid.save()
+                        if UserEarnings.objects.filter(user=winner_bid.player, game_id=game.id, game_kind='bingo', is_owner=False).first() == None:
+                            UserEarnings.objects.create(
+                                user=winner_bid.player, game_id=game.id, game_kind='bingo', is_owner=False, earning=winner_earning)
                 else:
                     game.elapsed_time = elapsed_time
             else:
@@ -292,7 +312,7 @@ def manage_bingo_game():
                         game.called_numbers.append(number)
                         if match_game_number(number, game):
                             game.end_time = now_time
-                            game.status = 'E'
+                            game.status = 'ended'
                         else:
                             game.elapsed_time = 0
                     else:
