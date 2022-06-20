@@ -20,6 +20,7 @@ from game.views import check_user_coin
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 import random
+import pytz
 
 
 @api_view(['POST'])
@@ -309,13 +310,15 @@ def get_room_owner_earning(request):
         else:
             return Response(data='no owner', status=status.HTTP_204_NO_CONTENT)
         games = BingoGame.objects.filter(
-            end_time__gte=owner_history.from_date, end_time_lt=owner_history.to_date, live=False)
+            end_time__gte=owner_history.from_date, end_time__lt=owner_history.to_date, live=False)
         total_earning = 0
         for game in games:
             earning = game.total_cards_count*room.bingo_price*0.001*0.1
             total_earning += earning
         curr_time = datetime.datetime.utcnow()
-        period = str(curr_time-owner_history.from_date)  # time delta
+        curr_time_timezone_aware = pytz.utc.localize(curr_time)
+        period = str(curr_time_timezone_aware -
+                     owner_history.from_date).split('.', 2)[0]  # time delta
         data = {'earning': str(total_earning), 'period': period}
         return Response(data=data, status=status.HTTP_200_OK)
 

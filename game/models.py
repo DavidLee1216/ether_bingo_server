@@ -49,6 +49,7 @@ class UserEarnings(models.Model):
     is_owner = models.BooleanField(default=False, blank=False)
     earning = models.DecimalField(
         max_digits=8, decimal_places=5, default=0, blank=False)
+    verified = models.BooleanField(default=False, blank=False)
 
     def __str__(self) -> str:
         return f'user: {self.user}, game_id: {self.game_id}, game_kind: {self.game_kind}, is_owner: {self.is_owner}, earning: {self.earning}'

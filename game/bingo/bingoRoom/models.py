@@ -95,7 +95,7 @@ class BingoRoomHistory(models.Model):
     to_date = models.DateTimeField(null=True)  # date time ended the ownership
     # BingoRoomAuctionBidHistory id for checksum  # for system, it is null
     winned_bid = models.ForeignKey(
-        BingoRoomAuctionBidHistory, on_delete=models.DO_NOTHING, default=None)
+        BingoRoomAuctionBidHistory, on_delete=models.DO_NOTHING, default=None, null=True)
     # room ownership is available or not
     live = models.BooleanField(default=False)
 

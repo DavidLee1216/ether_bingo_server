@@ -4,7 +4,6 @@ from django.shortcuts import render
 from game.models import UserCoin
 from game.tasks import assign_room_ownership
 from game.views import check_user_coin
-
 from user.models import User
 from .models import BingoRoom, BingoRoomHistory, BingoRoomAuction, BingoRoomAuctionBidHistory, BingoRoomSetting
 from django.shortcuts import get_object_or_404
@@ -139,13 +138,17 @@ def pay_for_winner(request):
     amount_to_pay = request.data.get('amount')
     try:
         user = User.objects.get(username=username)
-        winned_bingo_bid = BingoRoomAuctionBidHistory.objects.filter(
+        winned_bingo_bids = BingoRoomAuctionBidHistory.objects.filter(
             bidder=user, win_state=True, paid_state=0)
+        winned_bingo_bid = next(
+            filter(lambda x: x.room_auction.room.id == room_id, winned_bingo_bids), None)
         if winned_bingo_bid:
             auction = winned_bingo_bid.room_auction
             auction.live = False
             room_history = assign_room_ownership(
-                username, room_id, amount_to_pay, winned_bingo_bid.room_auction)
+                username, room_id, amount_to_pay, winned_bingo_bid.room_auction, winned_bingo_bid)
+            winned_bingo_bid.paid_state = 1
+            winned_bingo_bid.save()
             data = {'from': room_history.from_date, 'to': room_history.to_date}
             return Response(data=data, status=status.HTTP_200_OK)
 
@@ -158,15 +161,56 @@ def pay_for_winner(request):
 def arrange_room_auctions(request):
     data = []
     room_auctions = BingoRoomAuction.objects.filter(
-        live=True, winner=None).order_by('room')
+        live=True).order_by('room')
     for auction in room_auctions:
         last_bid = BingoRoomAuctionBidHistory.objects.filter(
             room_auction=auction).order_by('-id').first()
         if last_bid:
             auction_data = {'room_id': auction.room.id, 'last_bid_id': last_bid.bid_id_of_auction,
-                            'username': last_bid.bidder.username, 'bid_price': last_bid.bid_price, 'elapsed_time': auction.last_bid_elapsed_time, 'time_limit': auction.time_limit, 'coin_per_bid': auction.coin_per_bid, 'price_per_bid': auction.price_per_bid}
+                            'username': last_bid.bidder.username, 'bid_price': last_bid.bid_price, 'elapsed_time': auction.last_bid_elapsed_time, 'time_limit': auction.time_limit, 'coin_per_bid': auction.coin_per_bid, 'price_per_bid': auction.price_per_bid, 'winner': auction.winner.username if auction.winner is not None else None}
         else:
             auction_data = {'room_id': auction.room_id,
-                            'last_bid_id': 0, 'username': '', 'bid_price': auction.start_price, 'elapsed_time': 0, 'time_limit': auction.time_limit, 'coin_per_bid': auction.coin_per_bid, 'price_per_bid': auction.price_per_bid}
+                            'last_bid_id': 0, 'username': '', 'bid_price': auction.start_price, 'elapsed_time': 0, 'time_limit': auction.time_limit, 'coin_per_bid': auction.coin_per_bid, 'price_per_bid': auction.price_per_bid, 'winner': None}
         data.append(auction_data)
+    return Response(data=data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@login_required
+def get_won_room_auction(request):
+    username = request.data.get('username')
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        return Response(data="the user does not exist", status=status.HTTP_404_NOT_FOUND)
+    data = []
+    room_auctions = BingoRoomAuction.objects.filter(
+        live=True, winner=user).order_by('room')
+    for room_auction in room_auctions:
+        won_room_auction_history = BingoRoomAuctionBidHistory.objects.filter(
+            win_state=True, bidder=user, room_auction=room_auction).first()
+        if won_room_auction_history is None:
+            return Response(data='invalid data', status=status.HTTP_403_FORBIDDEN)
+        expire_date = room_auction.end_date + datetime.timedelta(days=1)
+        a_data = {'room_id': room_auction.room.id,
+                  'won_price': won_room_auction_history.bid_price, 'expire_date': expire_date}
+        data.append(a_data)
+    return Response(data=data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@login_required
+def get_own_room(request):
+    username = request.data.get('username')
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        return Response(data="the user does not exist", status=status.HTTP_404_NOT_FOUND)
+    data = []
+    curr_time = datetime.datetime.utcnow()
+    owner_room_histories = BingoRoomHistory.objects.filter(
+        live=True, owner=user, from_date__lte=curr_time, to_date__gte=curr_time)
+    for owner_room_history in owner_room_histories:
+        if owner_room_history.room.owner_room_history_id != owner_room_history.id:
+            return Response(data="invalid data", status=status.HTTP_403_FORBIDDEN)
+        a_data = {'room_id': owner_room_history.room.id}
+        data.append(a_data)
     return Response(data=data, status=status.HTTP_200_OK)

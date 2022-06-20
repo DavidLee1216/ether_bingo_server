@@ -12,4 +12,7 @@ urlpatterns = [
     path('get_room_auctions/', views.arrange_room_auctions,
          name='get_room_auctions'),
     path('get_room_setting/', views.get_room_setting, name='get_room_setting'),
+    path('get_won_room_auction/', views.get_won_room_auction,
+         name='get_won_room_auction'),
+    path('get_own_room/', views.get_own_room, name='get_own_room'),
 ]
