@@ -50,9 +50,17 @@ class UserEarnings(models.Model):
     earning = models.DecimalField(
         max_digits=8, decimal_places=5, default=0, blank=False)
     verified = models.BooleanField(default=False, blank=False)
+    withdrawn = models.BooleanField(default=False, blank=False)
 
     def __str__(self) -> str:
-        return f'user: {self.user}, game_id: {self.game_id}, game_kind: {self.game_kind}, is_owner: {self.is_owner}, earning: {self.earning}'
+        return f'user: {self.user}, game_id: {self.game_id}, game_kind: {self.game_kind}, is_owner: {self.is_owner}, earning: {self.earning}, verified: {self.verified}, withdrawn: {self.withdrawn}'
+
+
+class WithdrawHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    time = models.DateTimeField(blank=False)
+    amount = models.DecimalField(
+        max_digits=8, decimal_places=5, default=0, blank=False)
 
 
 class GameSettings(models.Model):  # game global settings

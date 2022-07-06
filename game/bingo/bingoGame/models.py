@@ -25,8 +25,9 @@ class BingoGame(models.Model):  # one bingo game
     elapsed_time = models.IntegerField(blank=False, default=0)  # seconds
     total_cards_count = models.IntegerField(
         blank=False, default=0)  # total attendees count
-    winner = models.ForeignKey(
-        User, on_delete=models.CASCADE, null=True, default=None)  # winner
+    # winner = models.ForeignKey(
+    #     User, on_delete=models.CASCADE, null=True, default=None)  # winner
+    winners = models.ManyToManyField(User)
     GAME_STATUS = [('S', 'selling'), ('C', 'calling'),
                    ('T', 'transition'), ('E', 'ended')]
     status = models.CharField(

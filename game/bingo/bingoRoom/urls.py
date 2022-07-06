@@ -9,6 +9,8 @@ urlpatterns = [
     path('get_room_auction_user_info/', views.get_room_auction_user_info,
          name='get_room_auction_user_info'),
     path('pay_for_winner/', views.pay_for_winner, name='pay_for_winner'),
+    path('assign_ownership/', views.assign_ownership, name='assign_ownership'),
+    path('remove_ownership/', views.remove_ownership, name='remove_ownership'),
     path('get_room_auctions/', views.arrange_room_auctions,
          name='get_room_auctions'),
     path('get_room_setting/', views.get_room_setting, name='get_room_setting'),

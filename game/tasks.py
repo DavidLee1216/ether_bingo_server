@@ -299,6 +299,7 @@ def manage_bingo_game():
                     for winner_bid in winner_bids:
                         winner_bid.earning = winner_earning
                         winner_bid.save()
+                        game.winners.add(winner_bid.player)
                         if UserEarnings.objects.filter(user=winner_bid.player, game_id=game.id, game_kind='bingo', is_owner=False).first() == None:
                             UserEarnings.objects.create(
                                 user=winner_bid.player, game_id=game.id, game_kind='bingo', is_owner=False, earning=winner_earning)

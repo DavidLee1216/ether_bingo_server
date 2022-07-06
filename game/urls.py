@@ -22,5 +22,8 @@ urlpatterns += [
     path('profile/set/', views.set_profile, name='set_profile'),
     path('profile/get/', views.get_profile, name='get_profile'),
     path('coin/buy/', views.buy_coin, name='buy_coin'),
-    path('coin/get/', views.get_coin, name='get_coin')
+    path('coin/get/', views.get_coin, name='get_coin'),
+    path('earnings/', views.get_earnings, name='get_earnings'),
+    path('verify/', views.verify, name='verify'),
+    path('withdraw/', views.withdraw, name='withdraw'),
 ]
