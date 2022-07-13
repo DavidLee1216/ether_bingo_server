@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from .models import BingoGame, BingoBids, BingoGameStatus
 from .serializer import BingoGameSerializer, BingoBidsSerializer
-from game.bingo.bingoRoom.models import BingoRoom, BingoRoomAuctionBidHistory, BingoRoomHistory, BingoRoomSetting
+from game.bingo.bingoRoom.models import BingoRoom, BingoRoomAuction, BingoRoomAuctionBidHistory, BingoRoomHistory, BingoRoomSetting
 from game.models import UserCoin, UserCoinBuyHistory
 from user.models import User
 from game.views import check_user_coin
@@ -21,6 +21,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 import random
 import pytz
+from django.db.models import Q
 
 
 @api_view(['POST'])
@@ -166,6 +167,7 @@ def get_bingo_game_info(request):  # call it per 0.2s
         room = BingoRoom.objects.filter(id=room_id, hold_on=False).first()
         if room is None:
             return Response(data="the room does not exist", status=status.HTTP_404_NOT_FOUND)
+        room_setting = BingoRoomSetting.objects.filter(room=room).first()
         owner_history = BingoRoomHistory.objects.filter(
             id=room.owner_room_history_id).first()
         if owner_history:
@@ -187,7 +189,8 @@ def get_bingo_game_info(request):  # call it per 0.2s
                     a_data = {'username': bid.player.username,
                               'count': player_bid_count}
                     arr.append(a_data)
-            data = {'owner': owner, 'status': game_status, 'data': arr}
+            data = {'owner': owner, 'status': game_status,
+                    'time_left': room_setting.selling_time-game.elapsed_time, 'data': arr}
             return Response(data=data, status=status.HTTP_200_OK)
         elif game_status == 'calling':
             data = {'owner': owner, 'status': game_status, 'last_number': game.last_number,
@@ -283,17 +286,39 @@ def get_bingo_room_winner_history(request):
 @api_view(['POST'])
 @permission_classes((AllowAny,))
 def get_bingo_winner_history(request):
-    from_date = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+    from_time = request.data.get('from_time')
+    if from_time != '' and from_time != None:
+        from_date = datetime.datetime.strptime(
+            from_time, '%Y-%m-%d %H:%M:%S.%f')
+        from_date = pytz.utc.localize(from_date)
+
+    else:
+        from_date = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+        from_date = pytz.utc.localize(from_date)
+
     games = BingoGame.objects.filter(
-        live=False, end_time__lte=from_date).order_by('-id')
+        live=False, end_time__gte=from_date).order_by('-id')
     arr = []
     for game in games:
         winner_bids = BingoBids.objects.filter(game=game, winning_state=True)
         for bid in winner_bids:
-            a_data = {'username': bid.player.username,
-                      'earning': bid.earning, 'time': game.end_time}
+            a_data = {'kind': 'bingo', 'username': bid.player.username,
+                      'earning': bid.earning, 'room': bid.game.room.id, 'time': game.end_time}
             arr.append(a_data)
-        data = {'data': arr}
+    auctions = BingoRoomAuction.objects.filter(
+        ~Q(winner=None), end_date__gte=from_date)
+    for auction in auctions:
+        a_data = {'kind': 'room_won', 'username': auction.winner.username,
+                  'earning': 0, 'room': auction.room.id, 'time': auction.end_date}
+        arr.append(a_data)
+    auctions = BingoRoomAuction.objects.filter(
+        ~Q(winner=None), pay_date__gte=from_date)
+    for auction in auctions:
+        a_data = {'kind': 'room_pay', 'username': auction.winner.username,
+                  'earning': 0, 'room': auction.room.id, 'time': auction.pay_date}
+        arr.append(a_data)
+    arr.sort(key=lambda x: x['time'], reverse=True)
+    data = {'data': arr}
     return Response(data=data, status=status.HTTP_200_OK)
 
 

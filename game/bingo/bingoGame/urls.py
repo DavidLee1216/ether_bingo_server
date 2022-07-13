@@ -19,6 +19,8 @@ urlpatterns = [
          name='get_bingo_game_player_info'),
     path('get_bingo_room_winner_history/', views.get_bingo_room_winner_history,
          name='get_bingo_room_winner_history'),
+    path('get_bingo_winner_history/', views.get_bingo_winner_history,
+         name='get_bingo_winner_history'),
     path('get_room_owner_earning/', views.get_room_owner_earning,
          name='get_room_owner_earning'),
 

@@ -240,5 +240,5 @@ CELERY_BEAT_SCHEDULE = {
     }
 }
 
-CELERY_RESULT_BACKEND = 'django-db'
+# CELERY_RESULT_BACKEND = 'django-db'
 # CELERY_RESULT_BACKEND = 'django-cache'

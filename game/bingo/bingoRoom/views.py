@@ -152,8 +152,6 @@ def pay_for_winner(request):
             to_time = int(round(room_history.to_date.timestamp()))
             res = check_room_ownership(user.id, room_id, from_time, to_time)
             if res:
-                auction = winned_bingo_bid.room_auction
-                auction.live = False
                 winned_bingo_bid.paid_state = 1
                 winned_bingo_bid.save()
                 return Response(data='Successfully done', status=status.HTTP_200_OK)

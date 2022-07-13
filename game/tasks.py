@@ -5,6 +5,7 @@ from subprocess import STARTF_USESTDHANDLES
 from django.db.models import Q
 
 from pytz import utc
+import pytz
 from user.models import User
 from django.utils.crypto import get_random_string
 from django.utils import timezone
@@ -66,6 +67,8 @@ def assign_room_ownership(username, room_id, paid_eth, auction=None, winned_bid=
             room.owner_room_history_id = room_history.id
             room.save()
         if auction:
+            pay_time = datetime.datetime.utcnow()
+            auction.pay_date = pay_time
             auction.live = False
             auction.save()
         return room_history
@@ -187,7 +190,6 @@ game_setting_selling_time, game_setting_selling_calling_transition_time, game_se
 
 @shared_task
 def get_game_settings():
-    print('get_game_settings called')
     global game_setting_selling_time, game_setting_selling_calling_transition_time, game_setting_calling_time, game_setting_end_caching_time, game_setting_min_attendee_count
     game_setting_selling_time, game_setting_selling_calling_transition_time, game_setting_calling_time, game_setting_end_caching_time, game_setting_min_attendee_count = get_bingo_game_settings()
 
@@ -213,6 +215,7 @@ def manage_one_auction(auction, curr_time):  # returns if the auction winned or 
 @shared_task
 def manage_bingo_room_auctions():
     curr_time = datetime.datetime.utcnow()
+    curr_time = pytz.utc.localize(curr_time)
     roomAuctions = BingoRoomAuction.objects.filter(live=True, winner=None)
     for roomAuction in roomAuctions:
         res = manage_one_auction(roomAuction, curr_time)
@@ -225,10 +228,12 @@ def manage_bingo_room_auctions():
             winned_room_auction.end_date = None
             winned_room_auction.winner = None
             winned_room_auction.last_bid_elapsed_time = 0
+            winned_room_auction.save()
             winned_bid = BingoRoomAuctionBidHistory.objects.filter(
                 room_auction=winned_room_auction, win_state=True).first()
-            winned_bid.win_state = False
-            winned_bid.save()
+            if winned_bid:
+                winned_bid.win_state = False
+                winned_bid.save()
 
     rooms = BingoRoom.objects.filter(hold_on=False)
     for room in rooms:
@@ -240,8 +245,8 @@ def manage_bingo_room_auctions():
                 room.owner_room_history_id = 0
                 owner_history.live = False
                 owner_history.save()
-            last_owner_history = BingoRoomHistory.objects.filter(
-                from_date__lte=curr_time, to_date__gt=curr_time).first()
+            last_owner_history = BingoRoomHistory.objects.filter(room=room,
+                                                                 from_date__lte=curr_time, to_date__gt=curr_time).first()
             if last_owner_history:
                 room.owner_room_history_id = last_owner_history.id
                 last_owner_history.live = True
@@ -254,6 +259,8 @@ def manage_bingo_game():
     global game_setting_selling_time, game_setting_selling_calling_transition_time, game_setting_calling_time, game_setting_end_caching_time, game_setting_min_attendee_count
     rooms = BingoRoom.objects.filter(hold_on=False)
     now_time = datetime.datetime.utcnow()
+    now_time = pytz.utc.localize(now_time)
+
     for room in rooms:
         selling_time = game_setting_selling_time
         calling_time = game_setting_calling_time
@@ -267,7 +274,6 @@ def manage_bingo_game():
         game = BingoGame.objects.filter(room=room, live=True).first()
         if game is None:
             end_time = now_time+datetime.timedelta(minutes=30)
-            print(f'room: {room.id} creating')
             game = BingoGame.objects.create(room=room, called_numbers=[], start_time=now_time,
                                             end_time=end_time, status='selling', live=True)
         else:
@@ -300,9 +306,9 @@ def manage_bingo_game():
                         winner_bid.earning = winner_earning
                         winner_bid.save()
                         game.winners.add(winner_bid.player)
-                        if UserEarnings.objects.filter(user=winner_bid.player, game_id=game.id, game_kind='bingo', is_owner=False).first() == None:
-                            UserEarnings.objects.create(
-                                user=winner_bid.player, game_id=game.id, game_kind='bingo', is_owner=False, earning=winner_earning)
+                        # if UserEarnings.objects.filter(user=winner_bid.player, game_id=game.id, game_kind='bingo', is_owner=False).first() == None:
+                        UserEarnings.objects.create(
+                            user=winner_bid.player, game_id=game.id, game_kind='bingo', is_owner=False, earning=winner_earning)
                 else:
                     game.elapsed_time = elapsed_time
             else:

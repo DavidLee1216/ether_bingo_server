@@ -42,6 +42,8 @@ class BingoRoomAuction(models.Model):  # room auction
         null=False, blank=False)  # auction start date time
     end_date = models.DateTimeField(
         null=True, default=None)  # auction end date time
+    pay_date = models.DateTimeField(
+        null=True, default=None)  # pay date time  to own
     start_price = models.DecimalField(
         max_digits=8, decimal_places=5, blank=False)  # start price of the auction
     coin_per_bid = models.IntegerField(
