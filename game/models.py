@@ -62,6 +62,9 @@ class WithdrawHistory(models.Model):
     amount = models.DecimalField(
         max_digits=8, decimal_places=5, default=0, blank=False)
 
+    def __str__(self) -> str:
+        return f'user: {self.user}, time: {self.time}, amount: {self.amount}'
+
 
 class GameSettings(models.Model):  # game global settings
     key = models.CharField(max_length=255, blank=False)  # key of variable
@@ -69,3 +72,12 @@ class GameSettings(models.Model):  # game global settings
 
     def __str__(self) -> str:
         return f'{self.key} = {self.value}'
+
+
+class UserContactUs(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    time = models.DateTimeField(blank=False)
+    content = models.TextField(default='', max_length=50000, blank=False)
+
+    def __str__(self) -> str:
+        return f'user: {self.user}, time: {self.time}, content: {self.content}'

@@ -19,6 +19,7 @@ from django.core.mail import send_mail
 import datetime
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from game.etherfunc import check_room_ownership
+import pytz
 
 
 @api_view(['POST'])
@@ -266,6 +267,8 @@ def get_own_room(request):
         return Response(data="the user does not exist", status=status.HTTP_404_NOT_FOUND)
     data = []
     curr_time = datetime.datetime.utcnow()
+    curr_time = pytz.utc.localize(curr_time)
+
     owner_room_histories = BingoRoomHistory.objects.filter(
         live=True, owner=user, from_date__lte=curr_time, to_date__gte=curr_time)
     for owner_room_history in owner_room_histories:

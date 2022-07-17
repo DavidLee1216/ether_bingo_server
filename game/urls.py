@@ -26,4 +26,5 @@ urlpatterns += [
     path('earnings/', views.get_earnings, name='get_earnings'),
     path('verify/', views.verify, name='verify'),
     path('withdraw/', views.withdraw, name='withdraw'),
+    path('contact/', views.contact, name='contact'),
 ]

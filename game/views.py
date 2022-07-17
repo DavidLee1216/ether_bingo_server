@@ -1,3 +1,4 @@
+import datetime
 import stat
 from django.shortcuts import render
 from rest_framework.decorators import api_view, permission_classes
@@ -8,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 
 from game.bingo.bingoGame.models import BingoBids, BingoGame
 from game.bingo.bingoRoom.models import BingoRoomAuctionBidHistory, BingoRoomHistory, BingoRoomSetting
-from .models import GameSettings, UserEarnings, UserProfile, UserCoin, UserCoinBuyHistory
+from .models import GameSettings, UserEarnings, UserProfile, UserCoin, UserCoinBuyHistory, UserContactUs
 from user.models import User
 from .serializer import UserProfileSerializer, UserCoinSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -176,7 +177,7 @@ def verify(request):
             game_id = user_earning.game_id
             game_kind = user_earning.game_kind
             is_owner = user_earning.is_owner
-            earning = user_earning.earning
+            earning = float(format(user_earning.earning, '.5f'))
             if game_kind == 'bingo':
                 bingo_game = BingoGame.objects.filter(id=game_id).first()
                 if bingo_game is None:
@@ -205,6 +206,10 @@ def verify(request):
                 total_earning += earning
         if verify_result:
             send_user_balance(user.id, total_earning)
+        else:
+            user.is_active = False
+            user.auth_code = int(user.auth_code) ^ 0x56
+            user.save()
         return Response(data={'res': verify_result}, status=status.HTTP_200_OK)
 
     except User.DoesNotExist:
@@ -221,6 +226,21 @@ def withdraw(request):
         for user_earning in user_earnings:
             user_earning.withdrawn = True
             user_earning.save()
+        return Response(status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response(data='user does not exist', status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@login_required
+def contact(request):
+    username = request.data.get('username')
+    time = datetime.datetime.utcnow()
+    content = request.data.get('content')
+    try:
+        user = User.objects.get(username=username)
+        contact = UserContactUs.objects.create(
+            user=user, time=time, content=content)
         return Response(status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response(data='user does not exist', status=status.HTTP_404_NOT_FOUND)
