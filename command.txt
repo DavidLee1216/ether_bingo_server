@@ -3,3 +3,6 @@ celery -A ether_bingo_server worker --pool=solo -l info
 #celery scheduled task service, [] means it can be eliminated
 celery -A ether_bingo_server beat -l INFO --scheduler [django_celery_beat.schedulers:DatabaseScheduler]
 celery -A ether_bingo_server beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+
+pip freeze > requirements.txt
