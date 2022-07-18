@@ -34,14 +34,15 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    re_path(r'^api/user/', include('user.urls')),
-    re_path(r'^api/game/', include('game.urls')),
+    path('admin/', admin.site.urls),  # admin page
+    re_path(r'^api/user/', include('user.urls')),  # user app
+    re_path(r'^api/game/', include('game.urls')),  # game app
     path('api/token/', jwt_views.TokenObtainPairView.as_view(),
-         name='token_obtain_pair'),
+         name='token_obtain_pair'),  # access token
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(),
-         name='token_refresh'),
-    path('api/token/verify/', jwt_views.TokenVerifyView.as_view(), name='token_verify'),
+         name='token_refresh'),  # refresh token
+    path('api/token/verify/', jwt_views.TokenVerifyView.as_view(),
+         name='token_verify'),  # token verify
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 urlpatterns += static(settings.STATIC_URL,
