@@ -1,7 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 import string
 import datetime
-from subprocess import STARTF_USESTDHANDLES
 from django.db.models import Q
 
 from pytz import utc

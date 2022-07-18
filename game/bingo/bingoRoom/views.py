@@ -1,21 +1,14 @@
 from datetime import datetime
-from turtle import delay
-from django.shortcuts import render
 from game.models import UserCoin
 from game.tasks import assign_room_ownership
 from game.views import check_user_coin
 from user.models import User
 from .models import BingoRoom, BingoRoomHistory, BingoRoomAuction, BingoRoomAuctionBidHistory, BingoRoomSetting
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import authenticate, login, logout
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.core.mail import send_mail
 import datetime
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from game.etherfunc import check_room_ownership
