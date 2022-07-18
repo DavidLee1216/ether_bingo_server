@@ -35,8 +35,8 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),  # admin page
-    re_path(r'^api/user/', include('user.urls')),  # user app
-    re_path(r'^api/game/', include('game.urls')),  # game app
+    # re_path(r'^api/user/', include('user.urls')),  # user app
+    # re_path(r'^api/game/', include('game.urls')),  # game app
     path('api/token/', jwt_views.TokenObtainPairView.as_view(),
          name='token_obtain_pair'),  # access token
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(),
